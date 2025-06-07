@@ -1,8 +1,6 @@
 "use client"
 
-import type React from "react"
-
-import { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -28,9 +26,11 @@ interface Message {
 interface DragDropInterfaceProps {
   vehicle: string
   insights: Insight[]
+  onMessagesChange?: (messages: Message[]) => void
+  onDroppedInsightsChange?: (insights: Insight[]) => void
 }
 
-export function DragDropInterface({ vehicle, insights }: DragDropInterfaceProps) {
+export function DragDropInterface({ vehicle, insights, onMessagesChange, onDroppedInsightsChange }: DragDropInterfaceProps) {
   const [droppedInsights, setDroppedInsights] = useState<Insight[]>([])
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -40,6 +40,14 @@ export function DragDropInterface({ vehicle, insights }: DragDropInterfaceProps)
       timestamp: new Date(),
     },
   ])
+
+  useEffect(() => {
+    onMessagesChange?.(messages)
+  }, [messages, onMessagesChange])
+
+  useEffect(() => {
+    onDroppedInsightsChange?.(droppedInsights)
+  }, [droppedInsights, onDroppedInsightsChange])
   const [inputMessage, setInputMessage] = useState("")
   const [draggedInsight, setDraggedInsight] = useState<Insight | null>(null)
 

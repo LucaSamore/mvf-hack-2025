@@ -22,6 +22,8 @@ import {
 import { TrendingUp, TrendingDown, MessageSquare, Share2, Download, Car, ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { DragDropInterface } from "@/components/drag-drop-interface"
+import { generateJSONExport, generatePDFExport, copyToClipboard } from "@/lib/export-utils"
+import { useToast } from "@/hooks/use-toast"
 
 const sentimentData = [
   { month: "Jan", sentiment: 75, mentions: 1200 },
@@ -75,12 +77,63 @@ export default function ReportPage() {
   const vehicle = searchParams.get("vehicle") || "Ferrari SF90"
   const [currentSentiment] = useState(85)
   const [isLoading, setIsLoading] = useState(true)
+  const [isExporting, setIsExporting] = useState(false)
+  const [messages, setMessages] = useState<any[]>([])
+  const [droppedInsights, setDroppedInsights] = useState<any[]>([])
+  const { toast } = useToast()
 
   useEffect(() => {
     // Simulate loading
     const timer = setTimeout(() => setIsLoading(false), 1500)
     return () => clearTimeout(timer)
   }, [])
+
+  const handleExport = async () => {
+    setIsExporting(true)
+    try {
+      const exportData = generateJSONExport(
+        vehicle,
+        currentSentiment,
+        sentimentData,
+        sourceData,
+        keyInsights,
+        messages,
+        droppedInsights
+      )
+
+      await generatePDFExport(exportData)
+      toast({
+        title: "Export Successful", 
+        description: "PDF report has been downloaded successfully.",
+      })
+    } catch (error) {
+      toast({
+        title: "Export Failed",
+        description: "There was an error generating the report. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  const handleShare = async () => {
+    const currentUrl = window.location.href
+    const success = await copyToClipboard(currentUrl)
+    
+    if (success) {
+      toast({
+        title: "Link Copied",
+        description: "Report link has been copied to clipboard.",
+      })
+    } else {
+      toast({
+        title: "Copy Failed",
+        description: "Unable to copy link. Please copy the URL manually.",
+        variant: "destructive",
+      })
+    }
+  }
 
   if (isLoading) {
     return (
@@ -115,13 +168,24 @@ export default function ReportPage() {
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            <Button variant="outline" size="sm" className="border-red-800 text-white hover:bg-red-800/20">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="border-red-800 text-white hover:bg-red-800/20"
+              onClick={handleShare}
+            >
               <Share2 className="h-4 w-4 mr-2" />
               Share
             </Button>
-            <Button variant="outline" size="sm" className="border-red-800 text-white hover:bg-red-800/20">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="border-red-800 text-white hover:bg-red-800/20"
+              disabled={isExporting}
+              onClick={handleExport}
+            >
               <Download className="h-4 w-4 mr-2" />
-              Export
+              {isExporting ? 'Exporting...' : 'Export'}
             </Button>
           </div>
         </div>
@@ -303,7 +367,12 @@ export default function ReportPage() {
           </TabsContent>
 
           <TabsContent value="explainability">
-            <DragDropInterface vehicle={vehicle} insights={keyInsights} />
+            <DragDropInterface 
+              vehicle={vehicle} 
+              insights={keyInsights}
+              onMessagesChange={setMessages}
+              onDroppedInsightsChange={setDroppedInsights}
+            />
           </TabsContent>
         </Tabs>
       </main>
