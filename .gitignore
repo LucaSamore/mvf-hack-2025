@@ -8,3 +8,16 @@ wheels/
 
 # Virtual environments
 .venv
+*/venv/
+forum-scraping/venv/
+forum-scraping/venv/bin/python3
+forum-scraping/venv/bin/pip3
+forum-scraping/venv/bin/pip
+forum-scraping/venv/bin/python
+forum-scraping/venv/bin/pip3
+forum-scraping/venv/bin/pip
+forum-scraping/venv/bin/python
+
+# data
+venv/bin/python
+*venv/
