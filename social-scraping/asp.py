@@ -7,7 +7,7 @@ import os
 
 load_dotenv()
 
-ASP_PROMPT_PATH = "scraping/prompts/asp_translation.md"
+ASP_PROMPT_PATH = "social-scraping/prompts/asp_translation.md"
 
 
 class AbstractSocialPost(BaseModel):
@@ -37,6 +37,14 @@ def translate_to_ASPs(raw_data: str) -> List[AbstractSocialPost]:
     return [AbstractSocialPost.model_validate(post_data) for post_data in posts_data]
 
 
+def compute_engagement_for_post(post: AbstractSocialPost) -> float:
+    return (post.likes + 3.0 * post.shares + 0.5 * post.comments) / post.views + 1
+
+
+def compute_engagements(posts: List[AbstractSocialPost]) -> List[float]:
+    return [compute_engagement_for_post(post) for post in posts]
+
+
 def _read_prompt() -> str:
     try:
         with open(ASP_PROMPT_PATH, "r") as file:
@@ -57,8 +65,9 @@ def _read_scraped_data(file_path: str) -> str:
 
 if __name__ == "__main__":
     try:
-        raw_data = _read_scraped_data("scraping/samples/dataset_tiktok_scraped.json")
+        raw_data = _read_scraped_data("social-scraping/samples/dataset_tiktok_scraped.json")
         translated_posts = translate_to_ASPs(raw_data)
         print(translated_posts)
+        print("Engagements:", compute_engagements(translated_posts))
     except Exception as e:
         print(f"Error in main execution: {e}")

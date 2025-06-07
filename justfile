@@ -12,4 +12,4 @@ run:
     uv run main.py
 
 asp:
-    uv run scraping/asp.py
+    uv run social-scraping/asp.py
