@@ -12,8 +12,6 @@ from reddit_scraper import RedditScraper
 
 
 def main():
-
-
     # Load environment variables for Reddit API
     load_dotenv()
     
@@ -25,7 +23,7 @@ def main():
     if all([client_id, client_secret]):
         print("\n=== Scraping Reddit ===")
         reddit_scraper = RedditScraper(client_id, client_secret, user_agent)
-        reddit_results = reddit_scraper.scrape_search_results(query='f40')
+      #  reddit_results = reddit_scraper.scrape_search_results(query='f40')
     else:
         print("\nSkipping Reddit scraping: Missing API credentials in .env file")
         print("Please set REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET in .env file")
@@ -39,9 +37,7 @@ def main():
     # Run FerrariChat scraper
     print("\n=== Scraping FerrariChat ===")
     ferrari_results = ferrari_scraper.scrape_search_results(search_url)
-    
- 
-    
+
     print("\nScraping completed!")
 
 

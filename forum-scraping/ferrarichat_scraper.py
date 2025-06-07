@@ -1,4 +1,8 @@
 import json
+import requests
+import time
+import re
+from bs4 import BeautifulSoup
 
 class FerrariChatScraper:
     def __init__(self):
@@ -182,6 +186,30 @@ class FerrariChatScraper:
                 
                 # Get the remaining text
                 content = content_element.get_text(strip=True, separator=' ')
+                
+                # Get attached files
+                attached_files = []
+                attached_files_header = content_element.find('h4', class_='attachedFilesHeader')
+                if attached_files_header:
+                    attached_files_list = content_element.find('ul', class_='attachmentList')
+                    if attached_files_list:
+                        for file_item in attached_files_list.find_all('li', class_='attachment'):
+                            file_name = file_item.find('h6', class_='filename').text if file_item.find('h6', class_='filename') else ''
+                            attached_files.append(file_name)
+                
+                # Get likes
+                likes_summary = content_element.find('div', class_='likesSummary')
+                likes = likes_summary.get_text(strip=True) if likes_summary else ''
+                
+                return {
+                    'post_id': post_id,
+                    'timestamp': timestamp,
+                    'created_date': created_date,
+                    'author': author,
+                    'content': content,
+                    'attached_files': attached_files,
+                    'likes': likes
+                }
             else:
                 content = ''
             

@@ -34,6 +34,16 @@ class RedditScraper:
                 post_title_lower = submission.title.lower()
                 post_text_lower = submission.selftext.lower() if submission.selftext else ""
                 
+                # Exclude posts if 'bmw' is found in subreddit or post content
+                if (
+                    'bmw' in title_lower or
+                    'bmw' in desc_lower or
+                    'bmw' in post_title_lower or
+                    'bmw' in post_text_lower
+                ):
+                    print(f"Excluding post from r/{subreddit_name}: {submission.title[:50]}... (contains 'bmw')")
+                    continue
+                
                 # Check if any relevant term is in subreddit info or post content
                 is_relevant = any(term in title_lower or term in desc_lower for term in relevant_terms) or \
                             any(term in post_title_lower or term in post_text_lower for term in relevant_terms)

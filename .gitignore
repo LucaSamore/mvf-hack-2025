@@ -19,4 +19,5 @@ forum-scraping/venv/bin/pip
 forum-scraping/venv/bin/python
 
 # data
-*.json
+venv/bin/python
+*venv/
