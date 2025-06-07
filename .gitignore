@@ -21,3 +21,5 @@ forum-scraping/venv/bin/python
 # data
 venv/bin/python
 *venv/
+*node_modules/
+forum-scraping/.env
