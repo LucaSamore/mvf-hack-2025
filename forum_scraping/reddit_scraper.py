@@ -17,8 +17,8 @@ class RedditScraper:
         subreddits = {}  # Dictionary to store subreddits and their posts
 
         # Define relevant terms
-        relevant_terms = ['ferrari']
-        
+        relevant_terms = ["ferrari"]
+
         try:
             # Search for posts
             search_results = self.reddit.subreddit("all").search(
@@ -32,12 +32,9 @@ class RedditScraper:
                 # Check if subreddit or post content is relevant
                 title_lower = subreddit.title.lower()
                 desc_lower = subreddit.public_description.lower()
-                
+
                 # Exclude posts if 'bmw' is found in subreddit or post content
-                if (
-                    'bmw' in title_lower or
-                    'bmw' in desc_lower 
-                ):
+                if "bmw" in title_lower or "bmw" in desc_lower:
                     print(
                         f"Excluding post from r/{subreddit_name}: {submission.title[:50]}... (contains 'bmw')"
                     )

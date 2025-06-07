@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
+import json
 from social_scraping.asp import (
     translate_to_ASPs,
     compute_engagements,
@@ -36,3 +37,77 @@ def get_engagements():
     except Exception as e:
         print(f"Error processing engagements: {e}")
         return JSONResponse(content=[])
+
+
+@app.get("/sentiments")
+def get_sentiments(limit: int = 1000, offset: int = 0):
+    """
+    Get sentiment data with pagination to handle large files.
+
+    Args:
+        limit: Number of items to return (max 1000)
+        offset: Number of items to skip from the beginning
+    """
+    try:
+        # Limit the maximum number of items to prevent memory issues
+        limit = min(limit, 1000)
+
+        print(f"Loading sentiment data with limit={limit}, offset={offset}")
+
+        with open("forum_scraping/samples/comments_with_sentiment.json", "r") as file:
+            sentiment_data = json.load(file)
+
+        if not sentiment_data:
+            return JSONResponse(content=[])
+
+        print(f"Total items available: {len(sentiment_data)}")
+
+        # Apply pagination
+        start_idx = offset
+        end_idx = offset + limit
+        paginated_data = sentiment_data[start_idx:end_idx]
+
+        print(f"Processing items {start_idx} to {end_idx}")
+
+        sentiment_mapping = {
+            "positive": 1,
+            "neutral": 0,
+            "negative": -1,
+        }
+
+        mapped_data = []
+        for i, item in enumerate(paginated_data):
+            try:
+                mapped_item = {
+                    "sentiment": sentiment_mapping.get(
+                        item.get("sentiment", {}).get("label", "neutral"), 0
+                    ),
+                    "created_at": item.get("created_at", ""),
+                }
+                mapped_data.append(mapped_item)
+            except Exception as item_error:
+                print(f"Error processing item {start_idx + i}: {item_error}")
+                continue
+
+        print(f"Successfully processed {len(mapped_data)} items")
+
+        # Add metadata about pagination
+        response_data = {
+            "data": mapped_data,
+            "metadata": {
+                "total_items": len(sentiment_data),
+                "returned_items": len(mapped_data),
+                "limit": limit,
+                "offset": offset,
+                "has_more": end_idx < len(sentiment_data),
+            },
+        }
+
+        return JSONResponse(content=response_data)
+
+    except Exception as e:
+        print(f"Error processing sentiments: {e}")
+        import traceback
+
+        traceback.print_exc()
+        return JSONResponse(content={"data": [], "error": str(e)})
