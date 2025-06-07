@@ -1,0 +1,37 @@
+[
+  {
+    "createTimeISO": "2025-01-28T17:22:35.000Z",
+    "shareCount": 16000,
+    "commentCount": 389,
+    "playCount": 1000000,
+    "diggCount": 208600
+  },
+  {
+    "createTimeISO": "2024-12-23T00:18:21.000Z",
+    "shareCount": 18400,
+    "commentCount": 697,
+    "playCount": 1300000,
+    "diggCount": 159500
+  },
+  {
+    "createTimeISO": "2025-02-03T22:00:32.000Z",
+    "shareCount": 56100,
+    "commentCount": 1489,
+    "playCount": 3000000,
+    "diggCount": 476800
+  },
+  {
+    "createTimeISO": "2025-04-17T03:20:35.000Z",
+    "shareCount": 247100,
+    "commentCount": 30400,
+    "playCount": 82500000,
+    "diggCount": 2400000
+  },
+  {
+    "createTimeISO": "2025-02-07T15:28:20.000Z",
+    "shareCount": 1100000,
+    "commentCount": 34300,
+    "playCount": 71600000,
+    "diggCount": 11800000
+  }
+]
