@@ -83,3 +83,28 @@ export function calculateAverageEngagement(engagements: EngagementData[]): numbe
   const sum = engagements.reduce((acc, item) => acc + item.engagement, 0)
   return sum / engagements.length
 }
+
+export async function generateChatResponse(question: string, context: any[]): Promise<string> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        question,
+        context,
+      }),
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    return data.response;
+  } catch (error) {
+    console.error('Error generating chat response:', error);
+    throw error;
+  }
+}

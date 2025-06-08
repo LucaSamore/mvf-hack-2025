@@ -275,3 +275,42 @@ def get_sentiments(vehicle: str = None, limit: int = 1000, offset: int = 0):
 
         traceback.print_exc()
         return JSONResponse(content={"data": [], "error": str(e)})
+
+@app.post("/api/chat")
+async def chat_endpoint(request: dict):
+    try:
+        question = request.get("question", "")
+        context = request.get("context", [])
+        
+        from groq import Groq
+        import os
+        
+        client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+        
+        system_prompt = """You are an AI assistant specializing in automotive sentiment analysis. You can answer general questions creatively and helpfully, but always guide the conversation back to sentiment analysis and automotive insights.
+
+When answering general questions:
+1. Provide a helpful, creative response
+2. Then smoothly transition to how this relates to sentiment analysis or automotive insights
+3. Encourage the user to explore the sentiment data and reports
+
+Keep responses concise but engaging. Always maintain focus on the sentiment analysis context."""
+        
+        user_prompt = f"Question: {question}\n\nContext from sentiment analysis: {context}\n\nPlease answer the question and guide the conversation toward sentiment analysis topics."
+        
+        chat_completion = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            max_tokens=200,
+            temperature=0.7
+        )
+        
+        response = chat_completion.choices[0].message.content
+        return {"response": response}
+        
+    except Exception as e:
+        print(f"Chat API error: {e}")
+        return {"response": "I'm having trouble right now. Please try asking about specific sentiment insights or explore the vehicle data in the report."}
