@@ -25,6 +25,8 @@ import { DragDropInterface } from "@/components/drag-drop-interface"
 import { generateJSONExport, generatePDFExport, copyToClipboard } from "@/lib/export-utils"
 import { useToast } from "@/hooks/use-toast"
 import { ForumSentimentCard, EngagementSentimentCard } from "@/components/sentiment-trend-cards"
+import { fetchSentiments, fetchEngagements, calculateAverageSentiment, calculateAverageEngagement } from "@/lib/api"
+import type { SentimentData, EngagementData } from "@/lib/api"
 
 const sentimentData = [
   { month: "Jan", sentiment: 75, mentions: 1200 },
@@ -76,7 +78,11 @@ const keyInsights = [
 export default function ReportPage() {
   const searchParams = useSearchParams()
   const vehicle = searchParams.get("vehicle") || "Ferrari SF90"
-  const [currentSentiment] = useState(85)
+  const [currentSentiment, setCurrentSentiment] = useState(85)
+  const [totalMentions, setTotalMentions] = useState(0)
+  const [averageEngagement, setAverageEngagement] = useState(0)
+  const [trendDirection, setTrendDirection] = useState("Positive")
+  const [riskLevel, setRiskLevel] = useState("Low")
   const [isLoading, setIsLoading] = useState(true)
   const [isExporting, setIsExporting] = useState(false)
   const [messages, setMessages] = useState<any[]>([])
@@ -84,10 +90,45 @@ export default function ReportPage() {
   const { toast } = useToast()
 
   useEffect(() => {
-    // Simulate loading
-    const timer = setTimeout(() => setIsLoading(false), 1500)
-    return () => clearTimeout(timer)
-  }, [])
+    const loadOverviewData = async () => {
+      try {
+        const [sentimentData, engagementData] = await Promise.all([
+          fetchSentiments(100, vehicle || undefined),
+          fetchEngagements(vehicle || undefined)
+        ])
+
+        if (sentimentData.length > 0) {
+          const avgSentiment = calculateAverageSentiment(sentimentData)
+          const sentimentPercentage = Math.round((avgSentiment + 1) * 50)
+          setCurrentSentiment(sentimentPercentage)
+          setTotalMentions(sentimentData.length)
+          
+          if (avgSentiment > 0.2) {
+            setTrendDirection("Positive")
+            setRiskLevel("Low")
+          } else if (avgSentiment < -0.2) {
+            setTrendDirection("Negative") 
+            setRiskLevel("High")
+          } else {
+            setTrendDirection("Neutral")
+            setRiskLevel("Medium")
+          }
+        }
+
+        if (engagementData.length > 0) {
+          const avgEngagement = calculateAverageEngagement(engagementData)
+          setAverageEngagement(avgEngagement)
+        }
+
+      } catch (error) {
+        console.error('Error loading overview data:', error)
+      } finally {
+        setTimeout(() => setIsLoading(false), 1500)
+      }
+    }
+
+    loadOverviewData()
+  }, [vehicle])
 
   const handleExport = async () => {
     setIsExporting(true)
@@ -213,11 +254,11 @@ export default function ReportPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-400">Total Mentions</p>
-                  <p className="text-3xl font-bold text-white">9,250</p>
+                  <p className="text-3xl font-bold text-white">{totalMentions.toLocaleString()}</p>
                 </div>
                 <MessageSquare className="h-8 w-8 text-blue-500" />
               </div>
-              <p className="text-sm text-green-400 mt-2">+15% vs last month</p>
+              <p className="text-sm text-gray-400 mt-2">Forum comments analyzed</p>
             </CardContent>
           </Card>
 
@@ -226,11 +267,20 @@ export default function ReportPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-400">Trend Direction</p>
-                  <p className="text-xl font-bold text-green-400">Positive</p>
+                  <p className={`text-xl font-bold ${
+                    trendDirection === "Positive" ? "text-green-400" : 
+                    trendDirection === "Negative" ? "text-red-400" : "text-gray-400"
+                  }`}>{trendDirection}</p>
                 </div>
-                <TrendingUp className="h-8 w-8 text-green-500" />
+                {trendDirection === "Positive" ? (
+                  <TrendingUp className="h-8 w-8 text-green-500" />
+                ) : trendDirection === "Negative" ? (
+                  <TrendingDown className="h-8 w-8 text-red-500" />
+                ) : (
+                  <div className="h-8 w-8 rounded-full bg-gray-500"></div>
+                )}
               </div>
-              <p className="text-sm text-gray-400 mt-2">6-month trend</p>
+              <p className="text-sm text-gray-400 mt-2">Based on sentiment analysis</p>
             </CardContent>
           </Card>
 
@@ -239,13 +289,25 @@ export default function ReportPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-400">Risk Level</p>
-                  <p className="text-xl font-bold text-yellow-400">Low</p>
+                  <p className={`text-xl font-bold ${
+                    riskLevel === "Low" ? "text-green-400" : 
+                    riskLevel === "High" ? "text-red-400" : "text-yellow-400"
+                  }`}>{riskLevel}</p>
                 </div>
-                <div className="h-8 w-8 rounded-full bg-yellow-400/20 flex items-center justify-center">
-                  <div className="h-4 w-4 rounded-full bg-yellow-400"></div>
+                <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
+                  riskLevel === "Low" ? "bg-green-400/20" : 
+                  riskLevel === "High" ? "bg-red-400/20" : "bg-yellow-400/20"
+                }`}>
+                  <div className={`h-4 w-4 rounded-full ${
+                    riskLevel === "Low" ? "bg-green-400" : 
+                    riskLevel === "High" ? "bg-red-400" : "bg-yellow-400"
+                  }`}></div>
                 </div>
               </div>
-              <p className="text-sm text-gray-400 mt-2">Reputation stable</p>
+              <p className="text-sm text-gray-400 mt-2">
+                {riskLevel === "Low" ? "Reputation stable" : 
+                 riskLevel === "High" ? "Reputation at risk" : "Reputation monitoring"}
+              </p>
             </CardContent>
           </Card>
         </div>
