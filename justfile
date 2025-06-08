@@ -13,3 +13,6 @@ run:
 
 asp:
     uv run social-scraping/asp.py
+
+themes:
+    uv run key_themes/scraping.py

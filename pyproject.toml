@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "bs4>=0.0.2",
+    "crawl4ai>=0.6.3",
     "fastapi[standard]>=0.115.12",
     "groq>=0.26.0",
     "numpy>=2.3.0",
