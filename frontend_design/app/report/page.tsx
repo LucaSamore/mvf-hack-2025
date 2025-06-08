@@ -171,7 +171,7 @@ export default function ReportPage() {
             <Button 
               variant="outline" 
               size="sm" 
-              className="border-red-800 text-white hover:bg-red-800/20"
+              className="border-red-600 bg-transparent text-white hover:bg-red-600/20 hover:text-white"
               onClick={handleShare}
             >
               <Share2 className="h-4 w-4 mr-2" />
@@ -180,7 +180,7 @@ export default function ReportPage() {
             <Button 
               variant="outline" 
               size="sm" 
-              className="border-red-800 text-white hover:bg-red-800/20"
+              className="border-red-600 bg-transparent text-white hover:bg-red-600/20 hover:text-white"
               disabled={isExporting}
               onClick={handleExport}
             >
@@ -337,6 +337,7 @@ export default function ReportPage() {
                                 ? "default"
                                 : insight.sentiment === "negative"
                                   ? "destructive"
+
                                   : "secondary"
                             }
                             className={insight.sentiment === "positive" ? "bg-green-600" : ""}
