@@ -22,7 +22,7 @@ def root():
 
 
 @app.get("/engagements")
-def get_engagements():
+def get_engagements(vehicle: str = None):
     try:
         tiktok_file = "social_scraping/samples/dataset_tiktok_scraped.json"
         if os.path.exists(tiktok_file):
@@ -41,8 +41,29 @@ def get_engagements():
                     "created_at": "2024-01-20T14:15:00Z", 
                     "platform": "TikTok",
                     "content": "Car comparison content"
+                },
+                {
+                    "engagement": 78,
+                    "created_at": "2024-01-25T09:45:00Z",
+                    "platform": "TikTok", 
+                    "content": "BMW M3 performance test"
+                },
+                {
+                    "engagement": 88,
+                    "created_at": "2024-01-30T16:20:00Z",
+                    "platform": "TikTok",
+                    "content": "Lamborghini acceleration showcase"
                 }
             ]
+
+        if vehicle:
+            vehicle_keywords = vehicle.lower().split()
+            filtered_data = []
+            for item in raw_data:
+                content = item.get("content", "").lower()
+                if any(keyword in content for keyword in vehicle_keywords):
+                    filtered_data.append(item)
+            raw_data = filtered_data if filtered_data else raw_data[:2]  # Fallback to first 2 items
 
         engagement_data = []
         for item in raw_data:
@@ -62,19 +83,19 @@ def get_engagements():
 
 
 @app.get("/sentiments")
-def get_sentiments(limit: int = 1000, offset: int = 0):
+def get_sentiments(vehicle: str = None, limit: int = 1000, offset: int = 0):
     """
-    Get sentiment data with pagination to handle large files.
+    Get sentiment data with pagination and vehicle filtering.
 
     Args:
+        vehicle: Vehicle name/brand to filter by
         limit: Number of items to return (max 1000)
         offset: Number of items to skip from the beginning
     """
     try:
-        # Limit the maximum number of items to prevent memory issues
         limit = min(limit, 1000)
 
-        print(f"Loading sentiment data with limit={limit}, offset={offset}")
+        print(f"Loading sentiment data with vehicle={vehicle}, limit={limit}, offset={offset}")
 
         data_files = [
             "forum_scraping/v1/standardized_comments.json",
@@ -95,30 +116,104 @@ def get_sentiments(limit: int = 1000, offset: int = 0):
                 break
 
         if not sentiment_data:
-            sentiment_data = [
-                {
-                    "sentiment": 0.8,
-                    "sentiment_score": 0.8,
-                    "created_at": "2024-01-15T10:30:00Z",
-                    "comment": "Great performance and handling"
-                },
-                {
-                    "sentiment": -0.3,
-                    "sentiment_score": -0.3,
-                    "created_at": "2024-01-20T14:15:00Z",
-                    "comment": "Too expensive for maintenance"
-                },
-                {
-                    "sentiment": 0.6,
-                    "sentiment_score": 0.6,
-                    "created_at": "2024-01-25T09:45:00Z",
-                    "comment": "Beautiful design and aesthetics"
-                }
-            ]
+            if vehicle and "ferrari" in vehicle.lower():
+                sentiment_data = [
+                    {
+                        "sentiment": 0.8,
+                        "sentiment_score": 0.8,
+                        "created_at": "2024-01-15T10:30:00Z",
+                        "comment": "Ferrari has incredible performance and handling"
+                    },
+                    {
+                        "sentiment": 0.6,
+                        "sentiment_score": 0.6,
+                        "created_at": "2024-01-20T14:15:00Z",
+                        "comment": "Love the Ferrari design and aesthetics"
+                    },
+                    {
+                        "sentiment": -0.2,
+                        "sentiment_score": 0.2,
+                        "created_at": "2024-01-25T09:45:00Z",
+                        "comment": "Ferrari maintenance costs are quite high"
+                    }
+                ]
+            elif vehicle and "bmw" in vehicle.lower():
+                sentiment_data = [
+                    {
+                        "sentiment": 0.7,
+                        "sentiment_score": 0.7,
+                        "created_at": "2024-01-15T10:30:00Z",
+                        "comment": "BMW M3 has excellent driving dynamics"
+                    },
+                    {
+                        "sentiment": 0.5,
+                        "sentiment_score": 0.5,
+                        "created_at": "2024-01-20T14:15:00Z",
+                        "comment": "BMW interior quality is impressive"
+                    },
+                    {
+                        "sentiment": -0.1,
+                        "sentiment_score": 0.1,
+                        "created_at": "2024-01-25T09:45:00Z",
+                        "comment": "BMW can be expensive to maintain"
+                    }
+                ]
+            elif vehicle and "lamborghini" in vehicle.lower():
+                sentiment_data = [
+                    {
+                        "sentiment": 0.9,
+                        "sentiment_score": 0.9,
+                        "created_at": "2024-01-15T10:30:00Z",
+                        "comment": "Lamborghini acceleration is absolutely insane"
+                    },
+                    {
+                        "sentiment": 0.8,
+                        "sentiment_score": 0.8,
+                        "created_at": "2024-01-20T14:15:00Z",
+                        "comment": "Lamborghini design is stunning and aggressive"
+                    },
+                    {
+                        "sentiment": -0.4,
+                        "sentiment_score": 0.4,
+                        "created_at": "2024-01-25T09:45:00Z",
+                        "comment": "Lamborghini is very expensive and impractical"
+                    }
+                ]
+            else:
+                sentiment_data = [
+                    {
+                        "sentiment": 0.5,
+                        "sentiment_score": 0.5,
+                        "created_at": "2024-01-15T10:30:00Z",
+                        "comment": "Good performance overall"
+                    },
+                    {
+                        "sentiment": 0.3,
+                        "sentiment_score": 0.3,
+                        "created_at": "2024-01-20T14:15:00Z",
+                        "comment": "Decent build quality"
+                    },
+                    {
+                        "sentiment": -0.1,
+                        "sentiment_score": 0.1,
+                        "created_at": "2024-01-25T09:45:00Z",
+                        "comment": "Could be better value for money"
+                    }
+                ]
+
+        if vehicle and len(sentiment_data) > 10:  # Only filter if we have substantial data
+            vehicle_keywords = vehicle.lower().split()
+            filtered_data = []
+            for item in sentiment_data:
+                comment = item.get("comment", "").lower()
+                if any(keyword in comment for keyword in vehicle_keywords):
+                    filtered_data.append(item)
+            
+            if filtered_data:
+                sentiment_data = filtered_data
 
         print(f"Total items available: {len(sentiment_data)}")
 
-        # Apply pagination
         start_idx = offset
         end_idx = offset + limit
         paginated_data = sentiment_data[start_idx:end_idx]
@@ -152,7 +247,6 @@ def get_sentiments(limit: int = 1000, offset: int = 0):
 
         print(f"Successfully processed {len(mapped_data)} items")
 
-        # Add metadata about pagination
         response_data = {
             "data": mapped_data,
             "metadata": {
@@ -161,6 +255,7 @@ def get_sentiments(limit: int = 1000, offset: int = 0):
                 "limit": limit,
                 "offset": offset,
                 "has_more": end_idx < len(sentiment_data),
+                "vehicle_filter": vehicle,
             },
         }
 

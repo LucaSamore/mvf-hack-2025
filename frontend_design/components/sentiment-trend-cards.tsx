@@ -1,11 +1,12 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useSearchParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 import { TrendingUp, TrendingDown, MessageSquare, Activity } from "lucide-react"
-import { fetchSentiments, fetchEngagements, calculateAverageSentiment, calculateSentimentPercentage } from "@/lib/api"
+import { fetchSentiments, fetchEngagements, calculateAverageSentiment, calculateSentimentPercentage, calculateAverageEngagement } from "@/lib/api"
 import type { SentimentData, EngagementData } from "@/lib/api"
 
 export function ForumSentimentCard() {
@@ -13,11 +14,15 @@ export function ForumSentimentCard() {
   const [loading, setLoading] = useState(true)
   const [averageSentiment, setAverageSentiment] = useState(0)
   const [sentimentBreakdown, setSentimentBreakdown] = useState({ positive: 0, neutral: 0, negative: 0 })
+  
+  const searchParams = useSearchParams()
+  const vehicle = searchParams.get("vehicle")
 
   useEffect(() => {
     const loadSentiments = async () => {
       try {
-        const data = await fetchSentiments(100)
+        console.log('Loading sentiments for vehicle:', vehicle)
+        const data = await fetchSentiments(100, vehicle || undefined)
         setSentiments(data)
         
         const avg = calculateAverageSentiment(data)
@@ -33,7 +38,7 @@ export function ForumSentimentCard() {
     }
 
     loadSentiments()
-  }, [])
+  }, [vehicle])
 
   const chartData = sentiments.slice(0, 6).map((item, index) => ({
     name: `Point ${index + 1}`,
@@ -66,6 +71,7 @@ export function ForumSentimentCard() {
         <CardTitle className="text-white flex items-center gap-2">
           <MessageSquare className="h-5 w-5 text-blue-500" />
           Forum Sentiment Trend
+          {vehicle && <span className="text-sm text-gray-400">({vehicle})</span>}
         </CardTitle>
         <CardDescription className="text-gray-400">
           Sentiment analysis from automotive forums and discussions
@@ -132,6 +138,7 @@ export function ForumSentimentCard() {
 
         <p className="text-xs text-gray-500 mt-2">
           Based on {sentiments.length} forum comments and discussions
+          {vehicle && ` about ${vehicle}`}
         </p>
       </CardContent>
     </Card>
@@ -142,15 +149,19 @@ export function EngagementSentimentCard() {
   const [engagements, setEngagements] = useState<EngagementData[]>([])
   const [loading, setLoading] = useState(true)
   const [averageEngagement, setAverageEngagement] = useState(0)
+  
+  const searchParams = useSearchParams()
+  const vehicle = searchParams.get("vehicle")
 
   useEffect(() => {
     const loadEngagements = async () => {
       try {
-        const data = await fetchEngagements()
+        console.log('Loading engagements for vehicle:', vehicle)
+        const data = await fetchEngagements(vehicle || undefined)
         setEngagements(data)
         
         if (data.length > 0) {
-          const avg = data.reduce((sum, item) => sum + item.engagement, 0) / data.length
+          const avg = calculateAverageEngagement(data)
           setAverageEngagement(avg)
         }
       } catch (error) {
@@ -161,7 +172,7 @@ export function EngagementSentimentCard() {
     }
 
     loadEngagements()
-  }, [])
+  }, [vehicle])
 
   const chartData = engagements.map((item, index) => ({
     name: `${item.platform} ${index + 1}`,
@@ -192,6 +203,7 @@ export function EngagementSentimentCard() {
         <CardTitle className="text-white flex items-center gap-2">
           <Activity className="h-5 w-5 text-green-500" />
           Engagement Sentiment Trend
+          {vehicle && <span className="text-sm text-gray-400">({vehicle})</span>}
         </CardTitle>
         <CardDescription className="text-gray-400">
           Social media engagement and interaction metrics
@@ -252,6 +264,7 @@ export function EngagementSentimentCard() {
 
         <p className="text-xs text-gray-500 mt-2">
           Based on {engagements.length} social media posts and interactions
+          {vehicle && ` about ${vehicle}`}
         </p>
       </CardContent>
     </Card>

@@ -14,27 +14,39 @@ export interface EngagementData {
   content: string
 }
 
-export async function fetchSentiments(limit: number = 50): Promise<SentimentData[]> {
+export async function fetchSentiments(limit: number = 50, vehicle?: string): Promise<SentimentData[]> {
   try {
-    const response = await fetch(`${API_BASE_URL}/sentiments?limit=${limit}`)
+    const params = new URLSearchParams({ limit: limit.toString() })
+    if (vehicle) {
+      params.append('vehicle', vehicle)
+    }
+    
+    const response = await fetch(`${API_BASE_URL}/sentiments?${params}`)
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`)
     }
-    const data = await response.json()
-    return Array.isArray(data) ? data : []
+    const result = await response.json()
+    console.log('Fetched sentiments:', result.data?.length, 'items for vehicle:', vehicle)
+    return Array.isArray(result.data) ? result.data : []
   } catch (error) {
     console.error('Error fetching sentiments:', error)
     return []
   }
 }
 
-export async function fetchEngagements(): Promise<EngagementData[]> {
+export async function fetchEngagements(vehicle?: string): Promise<EngagementData[]> {
   try {
-    const response = await fetch(`${API_BASE_URL}/engagements`)
+    const params = new URLSearchParams()
+    if (vehicle) {
+      params.append('vehicle', vehicle)
+    }
+    
+    const response = await fetch(`${API_BASE_URL}/engagements?${params}`)
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`)
     }
     const result = await response.json()
+    console.log('Fetched engagements:', result.data?.length, 'items for vehicle:', vehicle)
     return Array.isArray(result.data) ? result.data : []
   } catch (error) {
     console.error('Error fetching engagements:', error)
@@ -64,4 +76,10 @@ export function calculateSentimentPercentage(sentiments: SentimentData[]): { pos
     neutral: Math.round((counts.neutral / total) * 100),
     negative: Math.round((counts.negative / total) * 100)
   }
+}
+
+export function calculateAverageEngagement(engagements: EngagementData[]): number {
+  if (engagements.length === 0) return 0
+  const sum = engagements.reduce((acc, item) => acc + item.engagement, 0)
+  return sum / engagements.length
 }
