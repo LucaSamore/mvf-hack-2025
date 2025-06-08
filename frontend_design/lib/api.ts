@@ -54,6 +54,26 @@ export async function fetchEngagements(vehicle?: string): Promise<EngagementData
   }
 }
 
+export async function fetchSummary(vehicle: string): Promise<string> {
+  try {
+    const params = new URLSearchParams()
+    if (vehicle) {
+      params.append('vehicle', vehicle)
+    }
+    
+    const response = await fetch(`${API_BASE_URL}/summary?${params}`)
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    const result = await response.json()
+    console.log('Fetched summary for vehicle:', vehicle)
+    return result.summary || result.data || ''
+  } catch (error) {
+    console.error('Error fetching summary:', error)
+    return ''
+  }
+}
+
 export function calculateAverageSentiment(sentiments: SentimentData[]): number {
   if (sentiments.length === 0) return 0
   const sum = sentiments.reduce((acc, item) => acc + item.sentiment, 0)

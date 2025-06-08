@@ -21,6 +21,7 @@ app.add_middleware(
         "http://localhost:3000",
         "http://localhost:5173",
         "http://localhost:3004",
+        "http://localhost:3001",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -297,16 +298,21 @@ def get_sentiments(vehicle: str = None, limit: int = 1000, offset: int = 0):
         return JSONResponse(content={"data": [], "error": str(e)})
 
 
-@app.post("/summary")
-async def get_car_summary(car_model: str):
+@app.get("/summary")
+async def get_car_summary(vehicle: str = None):
     try:
-        print(f"Starting summary generation for car model: {car_model}")
+        if not vehicle:
+            return JSONResponse(
+                content={"error": "Vehicle parameter is required"}, status_code=400
+            )
+            
+        print(f"Starting summary generation for car model: {vehicle}")
 
-        ws_result = search_website_for_car_model(car_model)
+        ws_result = search_website_for_car_model(vehicle)
 
         if not ws_result.urls:
             return JSONResponse(
-                content={"error": f"No URLs found for car model: {car_model}"}
+                content={"error": f"No URLs found for car model: {vehicle}"}
             )
 
         all_markdown_content = ""
@@ -328,7 +334,7 @@ async def get_car_summary(car_model: str):
         if not all_markdown_content:
             return JSONResponse(
                 content={
-                    "error": f"No content could be scraped for car model: {car_model}"
+                    "error": f"No content could be scraped for car model: {vehicle}"
                 }
             )
 
@@ -337,7 +343,7 @@ async def get_car_summary(car_model: str):
 
         return JSONResponse(
             content={
-                "car_model": car_model,
+                "car_model": vehicle,
                 "summary": summary,
                 "scraped_urls": scraped_urls,
                 "total_urls_processed": len(scraped_urls),
@@ -345,7 +351,7 @@ async def get_car_summary(car_model: str):
         )
 
     except Exception as e:
-        print(f"Error generating summary for {car_model}: {e}")
+        print(f"Error generating summary for {vehicle}: {e}")
         import traceback
 
         traceback.print_exc()
