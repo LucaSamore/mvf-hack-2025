@@ -175,7 +175,7 @@ export default function NotificationsPage() {
                           <p className="text-gray-300 mb-2">{notification.message}</p>
                           <p className="text-sm text-gray-400">{notification.details}</p>
                         </div>
-                        <Button variant="outline" size="sm" className="border-red-800 text-white hover:bg-red-800/20">
+                        <Button variant="outline" size="sm" className="border-red-600 bg-transparent text-white hover:bg-red-600/20 hover:text-white">
                           View Report
                         </Button>
                       </div>
