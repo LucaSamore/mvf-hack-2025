@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Car, TrendingUp, Search, Bell, BarChart3 } from "lucide-react"
 import Link from "next/link"
+import { fetchSentiments } from "@/lib/api"
 
 const popularBrands = [
   "Ferrari",
@@ -22,28 +23,103 @@ const popularBrands = [
   "McLaren",
 ]
 
-const recentSearches = [
-  { brand: "Ferrari", model: "SF90 Stradale", sentiment: "positive" },
-  { brand: "Lamborghini", model: "Huracán", sentiment: "positive" },
-  { brand: "McLaren", model: "720S", sentiment: "neutral" },
-]
+interface RecentSearch {
+  vehicle: string
+  sentiment: "positive" | "negative" | "neutral"
+  timestamp: Date
+  sentimentScore: number
+}
+
+const STORAGE_KEY = "recent_analyses"
+const MAX_RECENT_SEARCHES = 10
 
 export default function HomePage() {
   const [searchInput, setSearchInput] = useState("")
   const [selectedBrand, setSelectedBrand] = useState("")
   const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([])
+
+  useEffect(() => {
+    loadRecentSearches()
+  }, [])
+
+  const loadRecentSearches = () => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY)
+      if (stored) {
+        const searches = JSON.parse(stored).map((search: any) => ({
+          ...search,
+          timestamp: new Date(search.timestamp)
+        }))
+        setRecentSearches(searches)
+      }
+    } catch (error) {
+      console.error('Error loading recent searches:', error)
+    }
+  }
+
+  const saveRecentSearch = async (vehicle: string) => {
+    try {
+      const sentimentData = await fetchSentiments(10, vehicle)
+      
+      let sentiment: "positive" | "negative" | "neutral" = "neutral"
+      let sentimentScore = 0
+      
+      if (sentimentData.length > 0) {
+        const avgSentiment = sentimentData.reduce((acc, item) => acc + item.sentiment, 0) / sentimentData.length
+        sentimentScore = Math.round((avgSentiment + 1) * 50)
+        
+        if (avgSentiment > 0.2) sentiment = "positive"
+        else if (avgSentiment < -0.2) sentiment = "negative"
+        else sentiment = "neutral"
+      }
+
+      const newSearch: RecentSearch = {
+        vehicle,
+        sentiment,
+        timestamp: new Date(),
+        sentimentScore
+      }
+
+      const updatedSearches = [
+        newSearch,
+        ...recentSearches.filter(search => search.vehicle !== vehicle)
+      ].slice(0, MAX_RECENT_SEARCHES)
+
+      setRecentSearches(updatedSearches)
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedSearches))
+    } catch (error) {
+      console.error('Error saving recent search:', error)
+    }
+  }
+
+  const formatTimeAgo = (timestamp: Date) => {
+    const now = new Date()
+    const diffMs = now.getTime() - timestamp.getTime()
+    const diffMins = Math.floor(diffMs / (1000 * 60))
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+
+    if (diffMins < 60) return `${diffMins} minutes ago`
+    if (diffHours < 24) return `${diffHours} hours ago`
+    return `${diffDays} days ago`
+  }
 
   const handleAnalysis = async () => {
     if (!searchInput && !selectedBrand) return
 
     setIsAnalyzing(true)
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000))
+    const query = searchInput || selectedBrand
+    
+    await saveRecentSearch(query)
+    await new Promise((resolve) => setTimeout(resolve, 1000))
     setIsAnalyzing(false)
 
-    // Navigate to report page
-    const query = searchInput || selectedBrand
     window.location.href = `/report?vehicle=${encodeURIComponent(query)}`
+  }
+
+  const handleRecentSearchClick = (vehicle: string) => {
+    window.location.href = `/report?vehicle=${encodeURIComponent(vehicle)}`
   }
 
   return (
@@ -146,31 +222,47 @@ export default function HomePage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {recentSearches.map((search, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between p-3 rounded-lg bg-slate-800/50 hover:bg-slate-800/70 transition-colors cursor-pointer"
-                >
-                  <div>
-                    <div className="text-white font-medium">
-                      {search.brand} {search.model}
-                    </div>
-                    <div className="text-sm text-gray-400">Last analyzed 2 hours ago</div>
-                  </div>
-                  <Badge
-                    variant={
-                      search.sentiment === "positive"
-                        ? "default"
-                        : search.sentiment === "negative"
-                          ? "destructive"
-                          : "secondary"
-                    }
-                    className={search.sentiment === "positive" ? "bg-green-600" : ""}
-                  >
-                    {search.sentiment}
-                  </Badge>
+              {recentSearches.length === 0 ? (
+                <div className="text-center py-8 text-gray-400">
+                  <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No recent analyses yet</p>
+                  <p className="text-sm">Start analyzing vehicles to see your search history</p>
                 </div>
-              ))}
+              ) : (
+                recentSearches.map((search, index) => (
+                  <div
+                    key={index}
+                    onClick={() => handleRecentSearchClick(search.vehicle)}
+                    className="flex items-center justify-between p-3 rounded-lg bg-slate-800/50 hover:bg-slate-800/70 transition-colors cursor-pointer"
+                  >
+                    <div>
+                      <div className="text-white font-medium">
+                        {search.vehicle}
+                      </div>
+                      <div className="text-sm text-gray-400">
+                        Last analyzed {formatTimeAgo(search.timestamp)}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-400">
+                        {search.sentimentScore}%
+                      </span>
+                      <Badge
+                        variant={
+                          search.sentiment === "positive"
+                            ? "default"
+                            : search.sentiment === "negative"
+                              ? "destructive"
+                              : "secondary"
+                        }
+                        className={search.sentiment === "positive" ? "bg-green-600" : ""}
+                      >
+                        {search.sentiment}
+                      </Badge>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </CardContent>
         </Card>

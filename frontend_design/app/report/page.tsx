@@ -44,36 +44,109 @@ const sourceData = [
   { name: "Reviews", value: 10, color: "#22c55e" },
 ]
 
-const keyInsights = [
-  {
-    title: "Performance Praise",
-    description: "Exceptional acceleration and handling consistently mentioned",
-    sentiment: "positive",
-    impact: "high",
-    sources: 847,
-  },
-  {
-    title: "Price Concerns",
-    description: "High maintenance costs frequently discussed",
-    sentiment: "negative",
-    impact: "medium",
-    sources: 423,
-  },
-  {
-    title: "Design Appeal",
-    description: "Aesthetic design receives widespread appreciation",
-    sentiment: "positive",
-    impact: "high",
-    sources: 692,
-  },
-  {
-    title: "Reliability Questions",
-    description: "Some concerns about long-term reliability",
-    sentiment: "neutral",
-    impact: "medium",
-    sources: 234,
-  },
-]
+const getVehicleSpecificInsights = (vehicle: string, sentimentData: SentimentData[], engagementData: EngagementData[]) => {
+  const totalSources = sentimentData.length + engagementData.length
+  const avgSentiment = calculateAverageSentiment(sentimentData)
+  const avgEngagement = calculateAverageEngagement(engagementData)
+  
+  if (vehicle.toLowerCase().includes("ferrari")) {
+    return [
+      {
+        title: "Performance Excellence",
+        description: "Outstanding acceleration and track performance consistently praised",
+        sentiment: avgSentiment > 0.1 ? "positive" : avgSentiment < -0.1 ? "negative" : "neutral",
+        impact: "high",
+        sources: Math.floor(totalSources * 0.4),
+      },
+      {
+        title: "Premium Pricing",
+        description: "High purchase and maintenance costs frequently mentioned",
+        sentiment: "negative",
+        impact: "medium",
+        sources: Math.floor(totalSources * 0.25),
+      },
+      {
+        title: "Iconic Design",
+        description: "Classic Ferrari styling receives widespread admiration",
+        sentiment: "positive",
+        impact: "high",
+        sources: Math.floor(totalSources * 0.35),
+      },
+    ]
+  } else if (vehicle.toLowerCase().includes("bmw")) {
+    return [
+      {
+        title: "Driving Dynamics",
+        description: "Exceptional handling and driving experience highlighted",
+        sentiment: avgSentiment > 0.1 ? "positive" : avgSentiment < -0.1 ? "negative" : "neutral",
+        impact: "high",
+        sources: Math.floor(totalSources * 0.45),
+      },
+      {
+        title: "Technology Integration",
+        description: "Advanced tech features and infotainment system praised",
+        sentiment: "positive",
+        impact: "medium",
+        sources: Math.floor(totalSources * 0.3),
+      },
+      {
+        title: "Maintenance Costs",
+        description: "Service and repair expenses are a common concern",
+        sentiment: "negative",
+        impact: "medium",
+        sources: Math.floor(totalSources * 0.25),
+      },
+    ]
+  } else if (vehicle.toLowerCase().includes("lamborghini")) {
+    return [
+      {
+        title: "Exotic Appeal",
+        description: "Dramatic styling and exclusivity highly appreciated",
+        sentiment: avgSentiment > 0.1 ? "positive" : avgSentiment < -0.1 ? "negative" : "neutral",
+        impact: "high",
+        sources: Math.floor(totalSources * 0.5),
+      },
+      {
+        title: "Performance Power",
+        description: "Incredible acceleration and top speed capabilities",
+        sentiment: "positive",
+        impact: "high",
+        sources: Math.floor(totalSources * 0.3),
+      },
+      {
+        title: "Practicality Concerns",
+        description: "Daily usability and comfort limitations noted",
+        sentiment: "neutral",
+        impact: "medium",
+        sources: Math.floor(totalSources * 0.2),
+      },
+    ]
+  } else {
+    return [
+      {
+        title: "Performance Analysis",
+        description: "Vehicle performance characteristics under review",
+        sentiment: avgSentiment > 0.1 ? "positive" : avgSentiment < -0.1 ? "negative" : "neutral",
+        impact: "medium",
+        sources: Math.floor(totalSources * 0.4),
+      },
+      {
+        title: "Market Position",
+        description: "Competitive positioning and value proposition",
+        sentiment: "neutral",
+        impact: "medium",
+        sources: Math.floor(totalSources * 0.35),
+      },
+      {
+        title: "User Feedback",
+        description: "General user experiences and opinions",
+        sentiment: avgSentiment > 0 ? "positive" : "negative",
+        impact: "medium",
+        sources: Math.floor(totalSources * 0.25),
+      },
+    ]
+  }
+}
 
 export default function ReportPage() {
   const searchParams = useSearchParams()
@@ -83,6 +156,9 @@ export default function ReportPage() {
   const [averageEngagement, setAverageEngagement] = useState(0)
   const [trendDirection, setTrendDirection] = useState("Positive")
   const [riskLevel, setRiskLevel] = useState("Low")
+  const [keyInsights, setKeyInsights] = useState<any[]>([])
+  const [sentimentData, setSentimentData] = useState<SentimentData[]>([])
+  const [engagementData, setEngagementData] = useState<EngagementData[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isExporting, setIsExporting] = useState(false)
   const [messages, setMessages] = useState<any[]>([])
@@ -92,16 +168,19 @@ export default function ReportPage() {
   useEffect(() => {
     const loadOverviewData = async () => {
       try {
-        const [sentimentData, engagementData] = await Promise.all([
+        const [fetchedSentimentData, fetchedEngagementData] = await Promise.all([
           fetchSentiments(100, vehicle || undefined),
           fetchEngagements(vehicle || undefined)
         ])
 
-        if (sentimentData.length > 0) {
-          const avgSentiment = calculateAverageSentiment(sentimentData)
+        setSentimentData(fetchedSentimentData)
+        setEngagementData(fetchedEngagementData)
+
+        if (fetchedSentimentData.length > 0) {
+          const avgSentiment = calculateAverageSentiment(fetchedSentimentData)
           const sentimentPercentage = Math.round((avgSentiment + 1) * 50)
           setCurrentSentiment(sentimentPercentage)
-          setTotalMentions(sentimentData.length)
+          setTotalMentions(fetchedSentimentData.length)
           
           if (avgSentiment > 0.2) {
             setTrendDirection("Positive")
@@ -115,10 +194,13 @@ export default function ReportPage() {
           }
         }
 
-        if (engagementData.length > 0) {
-          const avgEngagement = calculateAverageEngagement(engagementData)
+        if (fetchedEngagementData.length > 0) {
+          const avgEngagement = calculateAverageEngagement(fetchedEngagementData)
           setAverageEngagement(avgEngagement)
         }
+
+        const vehicleInsights = getVehicleSpecificInsights(vehicle, fetchedSentimentData, fetchedEngagementData)
+        setKeyInsights(vehicleInsights)
 
       } catch (error) {
         console.error('Error loading overview data:', error)
@@ -136,7 +218,7 @@ export default function ReportPage() {
       const exportData = generateJSONExport(
         vehicle,
         currentSentiment,
-        sentimentData,
+        [],
         sourceData,
         keyInsights,
         messages,

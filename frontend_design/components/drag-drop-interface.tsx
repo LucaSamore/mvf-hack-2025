@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { MessageSquare, Send, GripVertical, Bot, User } from "lucide-react"
+import { generateChatResponse } from "@/lib/api"
 
 interface Insight {
   title: string
@@ -98,7 +99,7 @@ export function DragDropInterface({ vehicle, insights, onMessagesChange, onDropp
     )
   }
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!inputMessage.trim()) return
 
     const userMessage: Message = {
@@ -108,33 +109,53 @@ export function DragDropInterface({ vehicle, insights, onMessagesChange, onDropp
       timestamp: new Date(),
     }
 
-    const botMessage: Message = {
-      id: (Date.now() + 1).toString(),
-      type: "bot",
-      content: generateContextualResponse(inputMessage, droppedInsights),
-      timestamp: new Date(),
-    }
-
-    setMessages((prev) => [...prev, userMessage, botMessage])
+    setMessages((prev) => [...prev, userMessage])
     setInputMessage("")
+
+    try {
+      const botContent = await generateContextualResponse(inputMessage, droppedInsights)
+      
+      const botMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        type: "bot",
+        content: botContent,
+        timestamp: new Date(),
+      }
+
+      setMessages((prev) => [...prev, botMessage])
+    } catch (error) {
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        type: "bot",
+        content: "I'm having trouble generating a response right now. Please try asking about specific sentiment insights or data sources.",
+        timestamp: new Date(),
+      }
+      setMessages((prev) => [...prev, errorMessage])
+    }
   }
 
-  const generateContextualResponse = (question: string, context: Insight[]): string => {
-    const lowerQuestion = question.toLowerCase()
+  const generateContextualResponse = async (question: string, context: Insight[]): Promise<string> => {
+    try {
+      const response = await generateChatResponse(question, context);
+      return response;
+    } catch (error) {
+      console.error('GROQ API failed, using fallback responses:', error);
+      const lowerQuestion = question.toLowerCase()
 
-    if (lowerQuestion.includes("why") && lowerQuestion.includes("low")) {
-      return "Sentiment scores can be low due to several factors: negative reviews highlighting specific issues, social media complaints about particular aspects, or comparative discussions where the vehicle doesn't perform as well as competitors. The AI analyzes the emotional tone and context of mentions to determine overall sentiment."
+      if (lowerQuestion.includes("why") && lowerQuestion.includes("low")) {
+        return "Sentiment scores can be low due to several factors: negative reviews highlighting specific issues, social media complaints about particular aspects, or comparative discussions where the vehicle doesn't perform as well as competitors. The AI analyzes the emotional tone and context of mentions to determine overall sentiment. Would you like to explore specific sentiment patterns in the data?"
+      }
+
+      if (lowerQuestion.includes("source") || lowerQuestion.includes("data")) {
+        return "Our data comes from multiple sources including Twitter, Instagram, Facebook, automotive forums like Reddit and specialized car communities, news articles from major automotive publications, professional reviews, and user-generated content. We process thousands of mentions daily using natural language processing. What specific aspect of the data collection would you like to know more about?"
+      }
+
+      if (lowerQuestion.includes("improve") || lowerQuestion.includes("better")) {
+        return "To improve sentiment, manufacturers typically focus on addressing the most frequently mentioned concerns. Based on the analysis, key areas for improvement would be addressing price/value perception, enhancing reliability communication, and leveraging the strong positive sentiment around performance and design in marketing efforts. Which sentiment insights would you like to dive deeper into?"
+      }
+
+      return "I can help explain any aspect of the sentiment analysis! Try asking about specific insights you've dropped here, data sources, methodology, or how to interpret the results for strategic decision-making. What would you like to explore about the sentiment data?"
     }
-
-    if (lowerQuestion.includes("source") || lowerQuestion.includes("data")) {
-      return "Our data comes from multiple sources including Twitter, Instagram, Facebook, automotive forums like Reddit and specialized car communities, news articles from major automotive publications, professional reviews, and user-generated content. We process thousands of mentions daily using natural language processing."
-    }
-
-    if (lowerQuestion.includes("improve") || lowerQuestion.includes("better")) {
-      return "To improve sentiment, manufacturers typically focus on addressing the most frequently mentioned concerns. Based on the analysis, key areas for improvement would be addressing price/value perception, enhancing reliability communication, and leveraging the strong positive sentiment around performance and design in marketing efforts."
-    }
-
-    return "I can help explain any aspect of the sentiment analysis. Try asking about specific insights you've dropped here, data sources, methodology, or how to interpret the results for strategic decision-making."
   }
 
   const removeInsight = (insightToRemove: Insight) => {
