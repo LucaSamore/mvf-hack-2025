@@ -8,6 +8,12 @@ wheels/
 
 # Virtual environments
 .venv
+
+.env
+.env.local
+.env.development
+.env.production
+
 */venv/
 forum-scraping/venv/
 forum-scraping/venv/bin/python3
