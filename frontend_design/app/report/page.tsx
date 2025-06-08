@@ -24,6 +24,7 @@ import Link from "next/link"
 import { DragDropInterface } from "@/components/drag-drop-interface"
 import { generateJSONExport, generatePDFExport, copyToClipboard } from "@/lib/export-utils"
 import { useToast } from "@/hooks/use-toast"
+import { ForumSentimentCard, EngagementSentimentCard } from "@/components/sentiment-trend-cards"
 
 const sentimentData = [
   { month: "Jan", sentiment: 75, mentions: 1200 },
@@ -264,61 +265,8 @@ export default function ReportPage() {
 
           <TabsContent value="overview" className="space-y-6">
             <div className="grid lg:grid-cols-2 gap-6">
-              {/* Sentiment Trend */}
-              <Card className="bg-black/40 border-red-800/30">
-                <CardHeader>
-                  <CardTitle className="text-white">Sentiment Trend (6 Months)</CardTitle>
-                  <CardDescription className="text-gray-400">
-                    Sentiment score over time with mention volume
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <LineChart data={sentimentData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                      <XAxis dataKey="month" stroke="#9CA3AF" />
-                      <YAxis stroke="#9CA3AF" />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: "#1F2937",
-                          border: "1px solid #374151",
-                          borderRadius: "8px",
-                          color: "#F9FAFB",
-                        }}
-                      />
-                      <Line type="monotone" dataKey="sentiment" stroke="#EF4444" strokeWidth={3} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-
-              {/* Data Sources */}
-              <Card className="bg-black/40 border-red-800/30">
-                <CardHeader>
-                  <CardTitle className="text-white">Data Sources</CardTitle>
-                  <CardDescription className="text-gray-400">Distribution of mentions across platforms</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <PieChart>
-                      <Pie
-                        data={sourceData}
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={100}
-                        fill="#8884d8"
-                        dataKey="value"
-                        label={({ name, value }) => `${name}: ${value}%`}
-                      >
-                        {sourceData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
+              <ForumSentimentCard />
+              <EngagementSentimentCard />
             </div>
           </TabsContent>
 
