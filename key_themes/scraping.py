@@ -1,7 +1,7 @@
 import asyncio
 import os
 from crawl4ai import AsyncWebCrawler, LLMConfig
-from web_search import search_website_for_car_model, read_prompt
+from .web_search import search_website_for_car_model, read_prompt
 from crawl4ai.extraction_strategy import LLMExtractionStrategy
 from dotenv import load_dotenv
 from groq import Groq

@@ -25,8 +25,9 @@ import { DragDropInterface } from "@/components/drag-drop-interface"
 import { generateJSONExport, generatePDFExport, copyToClipboard } from "@/lib/export-utils"
 import { useToast } from "@/hooks/use-toast"
 import { ForumSentimentCard, EngagementSentimentCard } from "@/components/sentiment-trend-cards"
-import { fetchSentiments, fetchEngagements, calculateAverageSentiment, calculateAverageEngagement } from "@/lib/api"
+import { fetchSentiments, fetchEngagements, fetchSummary, calculateAverageSentiment, calculateAverageEngagement } from "@/lib/api"
 import type { SentimentData, EngagementData } from "@/lib/api"
+import ReactMarkdown from "react-markdown"
 
 const sentimentData = [
   { month: "Jan", sentiment: 75, mentions: 1200 },
@@ -163,6 +164,8 @@ export default function ReportPage() {
   const [isExporting, setIsExporting] = useState(false)
   const [messages, setMessages] = useState<any[]>([])
   const [droppedInsights, setDroppedInsights] = useState<any[]>([])
+  const [summaryContent, setSummaryContent] = useState<string>("")
+  const [isLoadingSummary, setIsLoadingSummary] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -211,6 +214,25 @@ export default function ReportPage() {
 
     loadOverviewData()
   }, [vehicle])
+
+  const loadSummary = async () => {
+    if (!vehicle) return
+    
+    setIsLoadingSummary(true)
+    try {
+      const summary = await fetchSummary(vehicle)
+      setSummaryContent(summary)
+    } catch (error) {
+      console.error('Error loading summary:', error)
+      toast({
+        title: "Error Loading Summary",
+        description: "Failed to load the summary content. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoadingSummary(false)
+    }
+  }
 
   const handleExport = async () => {
     setIsExporting(true)
@@ -402,6 +424,9 @@ export default function ReportPage() {
             <TabsTrigger value="insights" className="data-[state=active]:bg-red-600">
               Key Insights
             </TabsTrigger>
+            <TabsTrigger value="summary" className="data-[state=active]:bg-red-600">
+              Summary
+            </TabsTrigger>
             <TabsTrigger value="explainability" className="data-[state=active]:bg-red-600">
               Explainability
             </TabsTrigger>
@@ -457,6 +482,77 @@ export default function ReportPage() {
                 </Card>
               ))}
             </div>
+          </TabsContent>
+
+          <TabsContent value="summary">
+            <Card className="bg-black/40 border-red-800/30">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-white">Executive Summary</CardTitle>
+                    <CardDescription className="text-gray-400">
+                      AI-generated summary of sentiment analysis for {vehicle}
+                    </CardDescription>
+                  </div>
+                  <Button 
+                    onClick={loadSummary}
+                    disabled={isLoadingSummary}
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    {isLoadingSummary ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                        Loading...
+                      </>
+                    ) : (
+                      "Generate Summary"
+                    )}
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {summaryContent ? (
+                  <div className="prose prose-invert max-w-none text-gray-300 leading-relaxed">
+                    <ReactMarkdown 
+                      components={{
+                        h1: ({ children }) => <h1 className="text-2xl font-bold text-white mb-4">{children}</h1>,
+                        h2: ({ children }) => <h2 className="text-xl font-semibold text-white mb-3 mt-6">{children}</h2>,
+                        h3: ({ children }) => <h3 className="text-lg font-medium text-white mb-2 mt-4">{children}</h3>,
+                        p: ({ children }) => <p className="text-gray-300 mb-4 leading-relaxed">{children}</p>,
+                        ul: ({ children }) => <ul className="list-disc list-inside mb-4 text-gray-300 space-y-1">{children}</ul>,
+                        ol: ({ children }) => <ol className="list-decimal list-inside mb-4 text-gray-300 space-y-1">{children}</ol>,
+                        li: ({ children }) => <li className="text-gray-300">{children}</li>,
+                        strong: ({ children }) => <strong className="text-white font-semibold">{children}</strong>,
+                        em: ({ children }) => <em className="text-gray-200 italic">{children}</em>,
+                        blockquote: ({ children }) => (
+                          <blockquote className="border-l-4 border-red-500 pl-4 my-4 text-gray-300 italic">
+                            {children}
+                          </blockquote>
+                        ),
+                        code: ({ children }) => (
+                          <code className="bg-slate-800 text-red-300 px-2 py-1 rounded text-sm">
+                            {children}
+                          </code>
+                        ),
+                        pre: ({ children }) => (
+                          <pre className="bg-slate-800 p-4 rounded-lg overflow-x-auto mb-4">
+                            {children}
+                          </pre>
+                        ),
+                      }}
+                    >
+                      {summaryContent}
+                    </ReactMarkdown>
+                  </div>
+                ) : (
+                  <div className="text-center py-12 text-gray-400">
+                    <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p className="text-lg mb-2">No summary generated yet</p>
+                    <p className="text-sm">Click "Generate Summary" to create an AI-powered executive summary</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="explainability">
